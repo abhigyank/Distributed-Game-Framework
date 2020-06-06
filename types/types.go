@@ -6,6 +6,17 @@ import (
 	"github.com/veandco/go-sdl2/sdl"
 )
 
+type Client struct {
+	ID      string
+	Address string
+	Port    string
+}
+
+type KafkaInfo struct {
+	Address string
+	Port    string
+}
+
 const winWidth, winHeight = 800, 600
 
 // Color represents the color of a given pixel.
