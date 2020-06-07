@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"flag"
 	"fmt"
 	"net"
@@ -9,6 +10,7 @@ import (
 	"strings"
 
 	"./types"
+	"github.com/segmentio/kafka-go"
 )
 
 func createServer(serverPort string, kafka types.KafkaInfo) {
@@ -42,6 +44,11 @@ func createServer(serverPort string, kafka types.KafkaInfo) {
 	}
 }
 
+func writeBallPosition(writer *kafka.Writer) error {
+	ballPosition := "ball position"
+	return types.PushKafkaMessage(context.Background(), writer, nil, []byte(ballPosition))
+}
+
 func main() {
 	kafkaAddress := flag.String("kafkaAddress", "127.0.0.1:8080", "kafkaAddress in  format ip:port")
 	flag.Parse()
@@ -49,6 +56,12 @@ func main() {
 	kafka := types.KafkaInfo{strings.Split(*kafkaAddress, ":")[0], strings.Split(*kafkaAddress, ":")[1]}
 	serverPort := "3000"
 
+	kafkaWriter := types.GetKafkaWriter([]string{kafka.Address + ":" + kafka.Port}, "server", "server")
+
 	fmt.Println("Creating server node...")
-	createServer(serverPort, kafka)
+	defer createServer(serverPort, kafka)
+	err := writeBallPosition(kafkaWriter)
+	if err != nil {
+		fmt.Println("Error occured while writing to stream", err)
+	}
 }

@@ -1,17 +1,64 @@
 package types
 
 import (
+	"context"
 	"os"
+	"time"
 
+	"github.com/segmentio/kafka-go"
 	"github.com/veandco/go-sdl2/sdl"
 )
 
+// GetKafkaWriter configures and returns a Kafka Writer
+func GetKafkaWriter(kafkaBrokerUrls []string, clientID string, topic string) *kafka.Writer {
+	dialer := &kafka.Dialer{
+		Timeout:  10 * time.Second,
+		ClientID: clientID,
+	}
+
+	config := kafka.WriterConfig{
+		Brokers:      kafkaBrokerUrls,
+		Topic:        topic,
+		Balancer:     &kafka.LeastBytes{},
+		Dialer:       dialer,
+		WriteTimeout: 10 * time.Second,
+		ReadTimeout:  10 * time.Second,
+	}
+	return kafka.NewWriter(config)
+}
+
+// GetKafkaReader configures and returns a Kafka Reader
+func GetKafkaReader(kafkaBrokerUrls []string, clientID string, topic string) *kafka.Reader {
+	config := kafka.ReaderConfig{
+		Brokers:         kafkaBrokerUrls,
+		GroupID:         clientID,
+		Topic:           topic,
+		MinBytes:        1,               // 1B
+		MaxBytes:        10e6,            // 10MB
+		MaxWait:         1 * time.Second, // Maximum amount of time to wait for new data to come when fetching batches of messages from kafka.
+		ReadLagInterval: -1,
+	}
+	return kafka.NewReader(config)
+}
+
+// PushKafkaMessage pushes the message on writer
+func PushKafkaMessage(parent context.Context, writer *kafka.Writer, key, value []byte) (err error) {
+	message := kafka.Message{
+		Key:   key,
+		Value: value,
+		Time:  time.Now(),
+	}
+	return writer.WriteMessages(parent, message)
+}
+
+// Client represents a player
 type Client struct {
 	ID      string
 	Address string
 	Port    string
 }
 
+// KafkaInfo represents the Kafka server information.
 type KafkaInfo struct {
 	Address string
 	Port    string

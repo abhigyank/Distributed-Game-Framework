@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"flag"
 	"fmt"
 	"net"
@@ -37,8 +38,25 @@ func main() {
 
 	fmt.Println("Written to stream.")
 
-	kafka := readConnection(conn)
-	fmt.Println("KafkaServer: " + kafka.Address + ":" + kafka.Port)
+	kafkaBrokerURL := readConnection(conn)
+	fmt.Println("KafkaServer: " + kafkaBrokerURL.Address + ":" + kafkaBrokerURL.Port)
+
+	kafkaReader := types.GetKafkaReader([]string{kafkaBrokerURL.Address + ":" + kafkaBrokerURL.Port}, "server", "server")
+	defer kafkaReader.Close()
+
+	fmt.Println("Got the kafkaReader")
+
+	for {
+		m, err := kafkaReader.ReadMessage(context.Background())
+		if err != nil {
+			fmt.Printf("error while receiving message: %s\n", err.Error())
+			continue
+		}
+
+		value := m.Value
+		fmt.Printf("message at topic/partition/offset %v/%v/%v: %s\n", m.Topic, m.Partition, m.Offset, string(value))
+	}
+
 }
 
 func readConnection(conn net.Conn) types.KafkaInfo {
