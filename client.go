@@ -41,7 +41,7 @@ func main() {
 	kafkaBrokerURL := readConnection(conn)
 	fmt.Println("KafkaServer: " + kafkaBrokerURL.Address + ":" + kafkaBrokerURL.Port)
 
-	kafkaReader := types.GetKafkaReader([]string{kafkaBrokerURL.Address + ":" + kafkaBrokerURL.Port}, "server", "server")
+	kafkaReader := types.GetKafkaReader([]string{kafkaBrokerURL.Address + ":" + kafkaBrokerURL.Port}, client.ID, "server")
 	defer kafkaReader.Close()
 
 	fmt.Println("Got the kafkaReader")
