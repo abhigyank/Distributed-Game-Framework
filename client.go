@@ -16,6 +16,7 @@ func main() {
 	clientID := flag.String("clientID", "1", "int: clientID")
 	clientAddress := flag.String("clientAddress", "127.0.0.1:5000", "clientAddress in the format ip:port")
 	serverAddress := flag.String("serverAddress", "127.0.0.1:3000", "serverAddress in the format ip:port")
+	flag.Parse()
 
 	client := types.Client{*clientID, strings.Split(*clientAddress, ":")[0], strings.Split(*clientAddress, ":")[1]}
 
