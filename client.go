@@ -20,10 +20,12 @@ func writePlayerPosition(writer *kafka.Writer) error {
 }
 
 func game(client types.Client, kafka types.KafkaInfo, oppositeID string) {
-	kafkaWriter := kafkaUtils.GetKafkaWriter([]string{kafka.Address + ":" + kafka.Port}, client.ID, client.ID)
+	fmt.Println("Creating " + client.ID + "_0 kafka topic...")
+	kafkaUtils.CreateTopic(kafka.Address+":"+kafka.Port, client.ID+"_0")
+	kafkaWriter := kafkaUtils.GetKafkaWriter([]string{kafka.Address + ":" + kafka.Port}, client.ID, client.ID+"_0")
 	kafkaReaderServer := kafkaUtils.GetKafkaReader([]string{kafka.Address + ":" + kafka.Port}, client.ID, "server_0")
 	defer kafkaReaderServer.Close()
-	kafkaReaderOpposition := kafkaUtils.GetKafkaReader([]string{kafka.Address + ":" + kafka.Port}, client.ID, oppositeID)
+	kafkaReaderOpposition := kafkaUtils.GetKafkaReader([]string{kafka.Address + ":" + kafka.Port}, client.ID, oppositeID+"_0")
 	defer kafkaReaderOpposition.Close()
 
 	fmt.Println("Got the kafkaReaders")

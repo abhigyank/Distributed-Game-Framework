@@ -15,12 +15,12 @@ import (
 )
 
 func game(client1 types.Client, client2 types.Client, kafka types.KafkaInfo) {
-	kafkaWriter := kafkaUtils.GetKafkaWriter([]string{kafka.Address + ":" + kafka.Port}, "server_0", "server_0")
+	kafkaWriter := kafkaUtils.GetKafkaWriter([]string{kafka.Address + ":" + kafka.Port}, "server", "server_0")
 
-	kafkaReaderClient1 := kafkaUtils.GetKafkaReader([]string{kafka.Address + ":" + kafka.Port}, "server_0", client1.ID)
+	kafkaReaderClient1 := kafkaUtils.GetKafkaReader([]string{kafka.Address + ":" + kafka.Port}, "server", client1.ID+"_0")
 	defer kafkaReaderClient1.Close()
 
-	kafkaReaderClient2 := kafkaUtils.GetKafkaReader([]string{kafka.Address + ":" + kafka.Port}, "server_0", client2.ID)
+	kafkaReaderClient2 := kafkaUtils.GetKafkaReader([]string{kafka.Address + ":" + kafka.Port}, "server", client2.ID+"_0")
 	defer kafkaReaderClient1.Close()
 
 	for {
