@@ -1,14 +1,14 @@
-package main
+package pong
 
 import (
 	"github.com/veandco/go-sdl2/sdl"
 
-	"./types"
+	"../types"
 )
 
 const winWidth, winHeight = 800, 600
 
-func main() {
+func StartGame() {
 
 	initEverything()
 	defer sdl.Quit()

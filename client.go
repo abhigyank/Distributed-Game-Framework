@@ -11,6 +11,7 @@ import (
 
 	"./kafkaUtils"
 	"./types"
+	"./pong"
 	"github.com/segmentio/kafka-go"
 )
 
@@ -30,6 +31,8 @@ func game(client types.Client, kafka types.KafkaInfo, oppositeID string) {
 
 	fmt.Println("Got the kafkaReaders")
 
+	go pong.StartGame();
+	
 	for {
 		m, err := kafkaReaderServer.ReadMessage(context.Background())
 		if err != nil {
