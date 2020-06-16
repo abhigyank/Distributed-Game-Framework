@@ -31,7 +31,7 @@ func game(client types.Client, kafka types.KafkaInfo, oppositeID string) {
 
 	fmt.Println("Got the kafkaReaders")
 
-	go pong.StartGame();
+	go pong.StartGame(kafkaWriter);
 	
 	for {
 		m, err := kafkaReaderServer.ReadMessage(context.Background())

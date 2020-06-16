@@ -2,13 +2,30 @@ package pong
 
 import (
 	"github.com/veandco/go-sdl2/sdl"
+	"github.com/segmentio/kafka-go"
 
+	"../kafkaUtils"
 	"../types"
+	"context"
 )
 
 const winWidth, winHeight = 800, 600
 
-func StartGame() {
+
+func writeToKafka(keyState []uint8, kafkaWriter *kafka.Writer){
+
+	if keyState[sdl.SCANCODE_UP] != 0 {
+		playerPosition := "-10"
+		kafkaUtils.PushKafkaMessage(context.Background(), kafkaWriter, nil, []byte(playerPosition))
+	}
+
+	if keyState[sdl.SCANCODE_DOWN] != 0 {
+		playerPosition := "10"
+		kafkaUtils.PushKafkaMessage(context.Background(), kafkaWriter, nil, []byte(playerPosition))
+	}
+}
+
+func StartGame(kafkaWriter *kafka.Writer) {
 
 	initEverything()
 	defer sdl.Quit()
@@ -42,6 +59,7 @@ func StartGame() {
 
 		clear(pixels)
 
+		writeToKafka(keyState, kafkaWriter)
 		player1.Update(keyState)
 		player2.AiUpdate(&ball)
 		ball.Update(&player1, &player2)
