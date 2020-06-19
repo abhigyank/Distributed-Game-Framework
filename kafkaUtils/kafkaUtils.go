@@ -37,8 +37,8 @@ func GetKafkaReader(kafkaBrokerUrls []string, clientID string, topic string) *ka
 		Brokers:         kafkaBrokerUrls,
 		GroupID:         clientID,
 		Topic:           topic,
-		MinBytes:        1,               // 1B
-		MaxBytes:        100,            // 100B
+		MinBytes:        1,                     // 1B
+		MaxBytes:        100,                   // 100B
 		MaxWait:         10 * time.Millisecond, // Maximum amount of time to wait for new data to come when fetching batches of messages from kafka.
 		ReadLagInterval: -1,
 	}

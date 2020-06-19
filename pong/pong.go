@@ -1,18 +1,20 @@
 package pong
 
 import (
-	"github.com/veandco/go-sdl2/sdl"
+	"fmt"
+
 	"github.com/segmentio/kafka-go"
+	"github.com/veandco/go-sdl2/sdl"
+
+	"context"
 
 	"../kafkaUtils"
 	"../types"
-	"context"
 )
 
 const winWidth, winHeight = 800, 600
 
-
-func writeToKafka(keyState []uint8, kafkaWriter *kafka.Writer){
+func writeToKafka(keyState []uint8, kafkaWriter *kafka.Writer) {
 
 	if keyState[sdl.SCANCODE_UP] != 0 {
 		playerPosition := "-10"
@@ -23,9 +25,14 @@ func writeToKafka(keyState []uint8, kafkaWriter *kafka.Writer){
 		playerPosition := "10"
 		kafkaUtils.PushKafkaMessage(context.Background(), kafkaWriter, nil, []byte(playerPosition))
 	}
+
+	if keyState[sdl.SCANCODE_UP] == 0 && keyState[sdl.SCANCODE_DOWN] == 0 {
+		playerPosition := "0"
+		kafkaUtils.PushKafkaMessage(context.Background(), kafkaWriter, nil, []byte(playerPosition))
+	}
 }
 
-func StartGame(kafkaWriter *kafka.Writer) {
+func StartGame(firstPlayer bool, kafkaWriter *kafka.Writer, kafkaReaderServer *kafka.Reader, kafkaReaderOpposition *kafka.Reader) {
 
 	initEverything()
 	defer sdl.Quit()
@@ -59,9 +66,34 @@ func StartGame(kafkaWriter *kafka.Writer) {
 
 		clear(pixels)
 
+		m, err := kafkaReaderServer.ReadMessage(context.Background())
+		if err != nil {
+			fmt.Printf("error while receiving message: %s\n", err.Error())
+			continue
+		}
+
+		value := m.Value
+		fmt.Printf("message at topic/partition/offset %v/%v/%v: %s\n", m.Topic, m.Partition, m.Offset, string(value))
+
 		writeToKafka(keyState, kafkaWriter)
-		player1.Update(keyState)
-		player2.AiUpdate(&ball)
+		fmt.Println("Written Player Position")
+
+		m, err = kafkaReaderOpposition.ReadMessage(context.Background())
+		if err != nil {
+			fmt.Printf("error while receiving message: %s\n", err.Error())
+			continue
+		}
+
+		value = m.Value
+		fmt.Printf("message at topic/partition/offset %v/%v/%v: %s\n", m.Topic, m.Partition, m.Offset, string(value))
+
+		if firstPlayer {
+			player1.UpdateFromKeyState(keyState)
+			player2.UpdateFromDelta(string(value))
+		} else {
+			player2.UpdateFromKeyState(keyState)
+			player1.UpdateFromDelta(string(value))
+		}
 		ball.Update(&player1, &player2)
 
 		player1.Draw(pixels)

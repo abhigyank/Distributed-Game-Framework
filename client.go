@@ -10,8 +10,8 @@ import (
 	"strings"
 
 	"./kafkaUtils"
-	"./types"
 	"./pong"
+	"./types"
 	"github.com/segmentio/kafka-go"
 )
 
@@ -31,29 +31,7 @@ func game(client types.Client, kafka types.KafkaInfo, oppositeID string) {
 
 	fmt.Println("Got the kafkaReaders")
 
-	go pong.StartGame(kafkaWriter);
-	
-	for {
-		m, err := kafkaReaderServer.ReadMessage(context.Background())
-		if err != nil {
-			fmt.Printf("error while receiving message: %s\n", err.Error())
-			continue
-		}
-
-		value := m.Value
-		fmt.Printf("message at topic/partition/offset %v/%v/%v: %s\n", m.Topic, m.Partition, m.Offset, string(value))
-
-		writePlayerPosition(kafkaWriter)
-
-		m, err = kafkaReaderOpposition.ReadMessage(context.Background())
-		if err != nil {
-			fmt.Printf("error while receiving message: %s\n", err.Error())
-			continue
-		}
-
-		value = m.Value
-		fmt.Printf("message at topic/partition/offset %v/%v/%v: %s\n", m.Topic, m.Partition, m.Offset, string(value))
-	}
+	pong.StartGame(client.ID == "1", kafkaWriter, kafkaReaderServer, kafkaReaderOpposition)
 }
 
 func main() {

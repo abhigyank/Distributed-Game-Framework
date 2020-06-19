@@ -99,13 +99,24 @@ func (paddle *Paddle) Draw(pixels []byte) {
 	}
 }
 
-// Update updates the paddle position by checking the keyboard state.
-func (paddle *Paddle) Update(keyState []uint8) {
+// UpdateFromKeyState updates the paddle position by checking the keyboard state.
+func (paddle *Paddle) UpdateFromKeyState(keyState []uint8) {
 	if keyState[sdl.SCANCODE_UP] != 0 {
 		paddle.Y -= 10
 	}
 
 	if keyState[sdl.SCANCODE_DOWN] != 0 {
+		paddle.Y += 10
+	}
+}
+
+// UpdateFromDelta updates the paddle position by checking the delta.
+func (paddle *Paddle) UpdateFromDelta(delta string) {
+	if delta == "-10" {
+		paddle.Y -= 10
+	}
+
+	if delta == "10" {
 		paddle.Y += 10
 	}
 }
