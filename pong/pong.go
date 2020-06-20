@@ -59,7 +59,6 @@ func readOppositionPosition(kafkaReaderOpposition *kafka.Reader, player2 *types.
 }
 
 func StartGame(firstPlayer bool, kafkaWriter *kafka.Writer, kafkaReaderServer *kafka.Reader, kafkaReaderOpposition *kafka.Reader) {
-
 	initEverything()
 	defer sdl.Quit()
 
