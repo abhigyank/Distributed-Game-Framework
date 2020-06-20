@@ -26,10 +26,10 @@ func writeToKafka(keyState []uint8, kafkaWriter *kafka.Writer) {
 		kafkaUtils.PushKafkaMessage(context.Background(), kafkaWriter, nil, []byte(playerPosition))
 	}
 
-	if keyState[sdl.SCANCODE_UP] == 0 && keyState[sdl.SCANCODE_DOWN] == 0 {
-		playerPosition := "0"
-		kafkaUtils.PushKafkaMessage(context.Background(), kafkaWriter, nil, []byte(playerPosition))
-	}
+	// if keyState[sdl.SCANCODE_UP] == 0 && keyState[sdl.SCANCODE_DOWN] == 0 {
+	// 	playerPosition := "0"
+	// 	kafkaUtils.PushKafkaMessage(context.Background(), kafkaWriter, nil, []byte(playerPosition))
+	// }
 }
 
 func readServer(kafkaReaderServer *kafka.Reader) {
