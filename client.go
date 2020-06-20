@@ -38,7 +38,7 @@ func game(client types.Client, kafka types.KafkaInfo, oppositeID string) {
 
 	value := m.Value
 	fmt.Printf("First message from server: %v/%v/%v: %s\n", m.Topic, m.Partition, m.Offset, string(value))
-
+	
 	pong.StartGame(client.ID == "1", kafkaWriter, kafkaReaderServer, kafkaReaderOpposition)
 }
 

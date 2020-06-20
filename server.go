@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"strings"
+	"time"
 
 	"./kafkaUtils"
 	"./types"
@@ -22,6 +23,9 @@ func game(client1 types.Client, client2 types.Client, kafka types.KafkaInfo) {
 
 	kafkaReaderClient2 := kafkaUtils.GetKafkaReader([]string{kafka.Address + ":" + kafka.Port}, "server", client2.ID+"_0")
 	defer kafkaReaderClient1.Close()
+
+	// Wait for both servers to bootstrap, ideally we should wait for acknoledgement from both that they are ready to start.
+	time.Sleep(5 * time.Second)
 
 	err := writeToStartGame(kafkaWriter)
 	if err != nil {
