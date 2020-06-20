@@ -62,8 +62,15 @@ func StartGame(firstPlayer bool, kafkaWriter *kafka.Writer, kafkaReaderServer *k
 
 	initEverything()
 	defer sdl.Quit()
-	 
-	window := createWindow("Pong - Game", winWidth, winHeight)
+
+	var playerID string
+	if (firstPlayer) {
+		playerID = "1"
+	} else {
+		playerID = "2"
+	}
+
+	window := createWindow("Pong - Game " + playerID, winWidth, winHeight)
 	defer window.Destroy()
 
 	renderer := createRenderer(window)
