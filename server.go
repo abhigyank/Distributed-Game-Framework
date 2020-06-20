@@ -23,6 +23,11 @@ func game(client1 types.Client, client2 types.Client, kafka types.KafkaInfo) {
 	kafkaReaderClient2 := kafkaUtils.GetKafkaReader([]string{kafka.Address + ":" + kafka.Port}, "server", client2.ID+"_0")
 	defer kafkaReaderClient1.Close()
 
+	err := writeToStartGame(kafkaWriter)
+	if err != nil {
+		fmt.Println("Error occured while writing to start game", err)
+	}
+
 	for {
 		err := writeBallPosition(kafkaWriter)
 		if err != nil {
@@ -87,6 +92,11 @@ func createServer(serverPort string, kafka types.KafkaInfo) {
 			conn.Close()
 		}
 	}
+}
+
+func writeToStartGame(writer *kafka.Writer) error {
+	startGame := "Start Game!"
+	return kafkaUtils.PushKafkaMessage(context.Background(), writer, nil, []byte(startGame))
 }
 
 func writeBallPosition(writer *kafka.Writer) error {

@@ -31,6 +31,14 @@ func game(client types.Client, kafka types.KafkaInfo, oppositeID string) {
 
 	fmt.Println("Got the kafkaReaders")
 
+	m, err := kafkaReaderServer.ReadMessage(context.Background())
+	if err != nil {
+		fmt.Printf("error while receiving first message from server: %s\n", err.Error())
+	}
+
+	value := m.Value
+	fmt.Printf("First message from server: %v/%v/%v: %s\n", m.Topic, m.Partition, m.Offset, string(value))
+
 	pong.StartGame(client.ID == "1", kafkaWriter, kafkaReaderServer, kafkaReaderOpposition)
 }
 
