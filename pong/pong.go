@@ -32,11 +32,37 @@ func writeToKafka(keyState []uint8, kafkaWriter *kafka.Writer) {
 	}
 }
 
+func readServer(kafkaReaderServer *kafka.Reader) {
+		m, err := kafkaReaderServer.ReadMessage(context.Background())
+		if err != nil {
+			fmt.Printf("error while receiving message: %s\n", err.Error())
+		}
+		value := m.Value
+		fmt.Printf("message at topic/partition/offset %v/%v/%v: %s\n", m.Topic, m.Partition, m.Offset, string(value))
+}
+
+
+func readOppositionPosition(kafkaReaderOpposition *kafka.Reader, player2 *types.Paddle, player1 *types.Paddle, firstPlayer bool) {
+	m, err := kafkaReaderOpposition.ReadMessage(context.Background())
+	if err != nil {
+		fmt.Printf("error while receiving message: %s\n", err.Error())
+	}
+
+	value := m.Value
+	fmt.Printf("message at topic/partition/offset %v/%v/%v: %s\n", m.Topic, m.Partition, m.Offset, string(value))
+
+	if firstPlayer {
+		player2.UpdateFromDelta(string(value))
+	} else {
+		player1.UpdateFromDelta(string(value))
+	}
+}
+
 func StartGame(firstPlayer bool, kafkaWriter *kafka.Writer, kafkaReaderServer *kafka.Reader, kafkaReaderOpposition *kafka.Reader) {
 
 	initEverything()
 	defer sdl.Quit()
-
+	 
 	window := createWindow("Pong - Game", winWidth, winHeight)
 	defer window.Destroy()
 
@@ -49,8 +75,8 @@ func StartGame(firstPlayer bool, kafkaWriter *kafka.Writer, kafkaReaderServer *k
 	white := types.Color{R: 255, G: 255, B: 255}
 	pixels := make([]byte, winWidth*winHeight*4)
 
-	player1 := types.Paddle{Position: types.Position{X: 50, Y: 100}, Width: 20, Height: 100, Color: white}
-	player2 := types.Paddle{Position: types.Position{X: 750, Y: 100}, Width: 20, Height: 100, Color: white}
+	player1 := types.Paddle{Position: types.Position{X: 50, Y: 300}, Width: 20, Height: 100, Color: white}
+	player2 := types.Paddle{Position: types.Position{X: 750, Y: 300}, Width: 20, Height: 100, Color: white}
 	ball := types.Ball{Position: types.Position{X: 400, Y: 300}, Radius: 20, XVelocity: 10, YVelocity: 10, Color: white}
 	running := true
 	keyState := sdl.GetKeyboardState()
@@ -66,34 +92,19 @@ func StartGame(firstPlayer bool, kafkaWriter *kafka.Writer, kafkaReaderServer *k
 
 		clear(pixels)
 
-		m, err := kafkaReaderServer.ReadMessage(context.Background())
-		if err != nil {
-			fmt.Printf("error while receiving message: %s\n", err.Error())
-			continue
-		}
+		go readServer(kafkaReaderServer)
 
-		value := m.Value
-		fmt.Printf("message at topic/partition/offset %v/%v/%v: %s\n", m.Topic, m.Partition, m.Offset, string(value))
+		go readOppositionPosition(kafkaReaderOpposition, &player2, &player1, firstPlayer)
 
 		writeToKafka(keyState, kafkaWriter)
-		fmt.Println("Written Player Position")
 
-		m, err = kafkaReaderOpposition.ReadMessage(context.Background())
-		if err != nil {
-			fmt.Printf("error while receiving message: %s\n", err.Error())
-			continue
-		}
-
-		value = m.Value
-		fmt.Printf("message at topic/partition/offset %v/%v/%v: %s\n", m.Topic, m.Partition, m.Offset, string(value))
 
 		if firstPlayer {
 			player1.UpdateFromKeyState(keyState)
-			player2.UpdateFromDelta(string(value))
 		} else {
 			player2.UpdateFromKeyState(keyState)
-			player1.UpdateFromDelta(string(value))
 		}
+
 		ball.Update(&player1, &player2)
 
 		player1.Draw(pixels)
