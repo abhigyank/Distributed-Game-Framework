@@ -1,6 +1,7 @@
 package types
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/veandco/go-sdl2/sdl"
@@ -28,15 +29,15 @@ type Color struct {
 
 // Position represents the position of a given element.
 type Position struct {
-	X, Y float32
+	X, Y float64
 }
 
 // Ball represents the ball of the game.
 type Ball struct {
 	Position
 	Radius    int
-	XVelocity float32
-	YVelocity float32
+	XVelocity float64
+	YVelocity float64
 	Color     Color
 }
 
@@ -69,22 +70,37 @@ func (ball *Ball) Update(leftPaddle *Paddle, rightPaddle *Paddle) {
 		ball.YVelocity = -ball.YVelocity
 	}
 
-	if int(ball.X) < 0+ball.Radius || int(ball.X) > winWidth-ball.Radius {
-		println("You lose!")
+	// if int(ball.X) < 0+ball.Radius || int(ball.X) > winWidth-ball.Radius {
+	// 	println("You lose!")
+	// 	os.Exit(0)
+	// }
+
+	if int(ball.X) > 850 {
 		os.Exit(0)
 	}
 
-	if ball.X < leftPaddle.X+float32(leftPaddle.Width/2)+float32(ball.Radius) {
-		if ball.Y > leftPaddle.Y-float32(leftPaddle.Height/2)-float32(ball.Radius) && ball.Y < leftPaddle.Y+float32(leftPaddle.Height/2)+float32(ball.Radius) {
+	if ball.X < leftPaddle.X+float64(leftPaddle.Width/2)+float64(ball.Radius) {
+		fmt.Println("Gone left!")
+		if ball.Y > leftPaddle.Y-float64(leftPaddle.Height/2)-float64(ball.Radius) && ball.Y < leftPaddle.Y+float64(leftPaddle.Height/2)+float64(ball.Radius) {
+			fmt.Println("Bouncing")
 			ball.XVelocity = -ball.XVelocity
 		}
 	}
 
-	if ball.X > rightPaddle.X-float32(rightPaddle.Width/2)-float32(ball.Radius) {
-		if ball.Y > rightPaddle.Y-float32(rightPaddle.Height/2)-float32(ball.Radius) && ball.Y < rightPaddle.Y+float32(rightPaddle.Height/2)+float32(ball.Radius) {
+	if ball.X > rightPaddle.X-float64(rightPaddle.Width/2)-float64(ball.Radius) {
+		fmt.Println("Gone right!")
+		if ball.Y > rightPaddle.Y-float64(rightPaddle.Height/2)-float64(ball.Radius) && ball.Y < rightPaddle.Y+float64(rightPaddle.Height/2)+float64(ball.Radius) {
+			fmt.Println("Bouncing")
 			ball.XVelocity = -ball.XVelocity
 		}
 	}
+}
+
+// Set updates the ball position.
+func (ball *Ball) Set(XPosition, YPosition, XVelocity, YVelocity float64) {
+	ball.X = XPosition
+	ball.Y = YPosition
+	ball.XVelocity, ball.YVelocity = XVelocity, YVelocity
 }
 
 // Draw draws the paddle.
