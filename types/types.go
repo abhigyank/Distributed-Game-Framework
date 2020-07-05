@@ -60,6 +60,17 @@ func (ball *Ball) Draw(pixels []byte) {
 	}
 }
 
+// Clear clears the ball.
+func (ball *Ball) Clear(pixels []byte) {
+	for y := -ball.Radius; y < ball.Radius; y++ {
+		for x := -ball.Radius; x < ball.Radius; x++ {
+			if x*x+y*y < ball.Radius*ball.Radius {
+				setPixel(int(ball.X)+x, int(ball.Y)+y, Color{0, 0, 0}, pixels)
+			}
+		}
+	}
+}
+
 // Update updates the ball position and controls collision.
 func (ball *Ball) Update(leftPaddle *Paddle, rightPaddle *Paddle) {
 
@@ -111,6 +122,18 @@ func (paddle *Paddle) Draw(pixels []byte) {
 	for y := 0; y < paddle.Height; y++ {
 		for x := 0; x < paddle.Width; x++ {
 			setPixel(startX+x, startY+y, paddle.Color, pixels)
+		}
+	}
+}
+
+//Clear clears the paddle.
+func (paddle *Paddle) Clear(pixels []byte) {
+	startX := int(paddle.X) - paddle.Width/2
+	startY := int(paddle.Y) - paddle.Height/2
+
+	for y := 0; y < paddle.Height; y++ {
+		for x := 0; x < paddle.Width; x++ {
+			setPixel(startX+x, startY+y, Color{0, 0, 0}, pixels)
 		}
 	}
 }

@@ -34,7 +34,7 @@ func writeToKafka(keyState []uint8, kafkaWriter *kafka.Writer) {
 	// }
 }
 
-func readServer(kafkaReaderServer *kafka.Reader, ball *types.Ball) {
+func readServer(kafkaReaderServer *kafka.Reader, ball *types.Ball, texture *sdl.Texture, renderer *sdl.Renderer, pixels []byte) {
 	for {
 		m, err := kafkaReaderServer.ReadMessage(context.Background())
 		if err != nil {
@@ -48,12 +48,18 @@ func readServer(kafkaReaderServer *kafka.Reader, ball *types.Ball) {
 		velocityX, _ := strconv.ParseFloat(ballPosition[2], 32)
 		velocityY, _ := strconv.ParseFloat(ballPosition[3], 32)
 
+		ball.Clear(pixels)
 		ball.Set(positionX, positionY, velocityX, velocityY)
+		ball.Draw(pixels)
+
+		texture.Update(nil, pixels, winWidth*4)
+		renderer.Copy(texture, nil, nil)
+		renderer.Present()
 	}
 
 }
 
-func readOppositionPosition(kafkaReaderOpposition *kafka.Reader, player2 *types.Paddle, player1 *types.Paddle, firstPlayer bool) {
+func readOppositionPosition(kafkaReaderOpposition *kafka.Reader, player2 *types.Paddle, player1 *types.Paddle, firstPlayer bool, texture *sdl.Texture, renderer *sdl.Renderer, pixels []byte) {
 	for {
 		m, err := kafkaReaderOpposition.ReadMessage(context.Background())
 		if err != nil {
@@ -64,10 +70,17 @@ func readOppositionPosition(kafkaReaderOpposition *kafka.Reader, player2 *types.
 		// fmt.Printf("message at topic/partition/offset %v/%v/%v: %s\n", m.Topic, m.Partition, m.Offset, string(value))
 
 		if firstPlayer {
+			player2.Clear(pixels)
 			player2.UpdateFromDelta(string(value))
+			player2.Draw(pixels)
 		} else {
+			player1.Clear(pixels)
 			player1.UpdateFromDelta(string(value))
+			player1.Draw(pixels)
 		}
+		texture.Update(nil, pixels, winWidth*4)
+		renderer.Copy(texture, nil, nil)
+		renderer.Present()
 	}
 }
 
@@ -100,8 +113,11 @@ func StartGame(firstPlayer bool, kafkaWriter *kafka.Writer, kafkaReaderServer *k
 	running := true
 	keyState := sdl.GetKeyboardState()
 
-	go readServer(kafkaReaderServer, &ball)
-	go readOppositionPosition(kafkaReaderOpposition, &player2, &player1, firstPlayer)
+	go readServer(kafkaReaderServer, &ball, texture, renderer, pixels)
+	go readOppositionPosition(kafkaReaderOpposition, &player2, &player1, firstPlayer, texture, renderer, pixels)
+	ball.Draw(pixels)
+	player1.Draw(pixels)
+	player2.Draw(pixels)
 	for running {
 		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
 			switch event.(type) {
@@ -111,23 +127,27 @@ func StartGame(firstPlayer bool, kafkaWriter *kafka.Writer, kafkaReaderServer *k
 			}
 		}
 
-		clear(pixels)
+		// clear(pixels)
 
 		writeToKafka(keyState, kafkaWriter)
 
 		if firstPlayer {
+			player1.Clear(pixels)
 			player1.UpdateFromKeyState(keyState)
+			player1.Draw(pixels)
 		} else {
+			player2.Clear(pixels)
 			player2.UpdateFromKeyState(keyState)
+			player2.Draw(pixels)
 		}
 
-		player1.Draw(pixels)
-		player2.Draw(pixels)
-		ball.Draw(pixels)
+		// player1.Draw(pixels)
+		// player2.Draw(pixels)
+		// ball.Draw(pixels)
 
-		texture.Update(nil, pixels, winWidth*4)
-		renderer.Copy(texture, nil, nil)
-		renderer.Present()
+		// texture.Update(nil, pixels, winWidth*4)
+		// renderer.Copy(texture, nil, nil)
+		// renderer.Present()
 
 		sdl.Delay(24)
 	}
