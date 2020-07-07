@@ -116,6 +116,7 @@ func (ball *Ball) Set(XPosition, YPosition, XVelocity, YVelocity float64) {
 
 // Draw draws the paddle.
 func (paddle *Paddle) Draw(pixels []byte) {
+	fmt.Println(paddle.Y);
 	startX := int(paddle.X) - paddle.Width/2
 	startY := int(paddle.Y) - paddle.Height/2
 
@@ -141,22 +142,22 @@ func (paddle *Paddle) Clear(pixels []byte) {
 // UpdateFromKeyState updates the paddle position by checking the keyboard state.
 func (paddle *Paddle) UpdateFromKeyState(keyState []uint8) {
 	if keyState[sdl.SCANCODE_UP] != 0 {
-		paddle.Y -= 10
+		paddle.Y -= 3
 	}
 
 	if keyState[sdl.SCANCODE_DOWN] != 0 {
-		paddle.Y += 10
+		paddle.Y += 3
 	}
 }
 
 // UpdateFromDelta updates the paddle position by checking the delta.
 func (paddle *Paddle) UpdateFromDelta(delta string) {
 	if delta == "-10" {
-		paddle.Y -= 10
+		paddle.Y -= 3
 	}
 
 	if delta == "10" {
-		paddle.Y += 10
+		paddle.Y += 3
 	}
 }
 

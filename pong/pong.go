@@ -9,12 +9,18 @@ import (
 	"github.com/veandco/go-sdl2/sdl"
 
 	"context"
+	// "time"
 
 	"../kafkaUtils"
 	"../types"
 )
 
 const winWidth, winHeight = 800, 600
+var kafkaDataArray[10000009]string;
+var maxItr = 0;
+var kafkaDataArrayBall[10000009]string;
+var maxItrBall = 0;
+var maxLength = 10000009;
 
 func writeToKafka(keyState []uint8, kafkaWriter *kafka.Writer) {
 
@@ -41,20 +47,23 @@ func readServer(kafkaReaderServer *kafka.Reader, ball *types.Ball, texture *sdl.
 			fmt.Printf("error while receiving message: %s\n", err.Error())
 		}
 		value := string(m.Value)
+		kafkaDataArrayBall[maxItrBall] = string(value)
+		maxItrBall = (maxItrBall + 1)%maxLength
+
 		// fmt.Printf("message at topic/partition/offset %v/%v/%v: %s\n", m.Topic, m.Partition, m.Offset, string(value))
-		ballPosition := strings.Split(value, ":")
-		positionX, _ := strconv.ParseFloat(ballPosition[0], 32)
-		positionY, _ := strconv.ParseFloat(ballPosition[1], 32)
-		velocityX, _ := strconv.ParseFloat(ballPosition[2], 32)
-		velocityY, _ := strconv.ParseFloat(ballPosition[3], 32)
+		// ballPosition := strings.Split(value, ":")
+		// positionX, _ := strconv.ParseFloat(ballPosition[0], 32)
+		// positionY, _ := strconv.ParseFloat(ballPosition[1], 32)
+		// velocityX, _ := strconv.ParseFloat(ballPosition[2], 32)
+		// velocityY, _ := strconv.ParseFloat(ballPosition[3], 32)
 
-		ball.Clear(pixels)
-		ball.Set(positionX, positionY, velocityX, velocityY)
-		ball.Draw(pixels)
+		// ball.Clear(pixels)
+		// ball.Set(positionX, positionY, velocityX, velocityY)
+		// ball.Draw(pixels)
 
-		texture.Update(nil, pixels, winWidth*4)
-		renderer.Copy(texture, nil, nil)
-		renderer.Present()
+		// texture.Update(nil, pixels, winWidth*4)
+		// renderer.Copy(texture, nil, nil)
+		// renderer.Present()
 	}
 
 }
@@ -68,19 +77,59 @@ func readOppositionPosition(kafkaReaderOpposition *kafka.Reader, player2 *types.
 
 		value := m.Value
 		// fmt.Printf("message at topic/partition/offset %v/%v/%v: %s\n", m.Topic, m.Partition, m.Offset, string(value))
+		kafkaDataArray[maxItr] = string(value)
+		maxItr = (maxItr + 1)%maxLength
+		// if firstPlayer {
+		// 	player2.Clear(pixels)
+		// 	player2.UpdateFromDelta(string(value))
+		// 	player2.Draw(pixels)
+		// } else {
+		// 	player1.Clear(pixels)
+		// 	player1.UpdateFromDelta(string(value))
+		// 	player1.Draw(pixels)
+		// }
+		// texture.Update(nil, pixels, winWidth*4)
+		// renderer.Copy(texture, nil, nil)
+		// renderer.Present()
+	}
+}
 
-		if firstPlayer {
-			player2.Clear(pixels)
-			player2.UpdateFromDelta(string(value))
-			player2.Draw(pixels)
-		} else {
-			player1.Clear(pixels)
-			player1.UpdateFromDelta(string(value))
-			player1.Draw(pixels)
+func renderGame(texture *sdl.Texture, renderer *sdl.Renderer, pixels []byte, firstPlayer bool, player2 *types.Paddle, player1 *types.Paddle, ball *types.Ball) {
+	playerArrayItr := 0
+	ballArrayItr := 0
+
+
+	for {
+		fmt.Println(playerArrayItr, maxItr);
+		if (playerArrayItr != maxItr) {
+			if firstPlayer {
+				player2.Clear(pixels)
+				player2.UpdateFromDelta(kafkaDataArray[playerArrayItr])
+				player2.Draw(pixels)
+			} else {
+				player1.Clear(pixels)
+				player1.UpdateFromDelta(kafkaDataArray[playerArrayItr])
+				player1.Draw(pixels)
+			}	
+			playerArrayItr = (playerArrayItr + 1)%maxLength
 		}
+		if (ballArrayItr != maxItrBall) {
+			value := kafkaDataArrayBall[ballArrayItr]
+			ballPosition := strings.Split(value, ":")
+			positionX, _ := strconv.ParseFloat(ballPosition[0], 32)
+			positionY, _ := strconv.ParseFloat(ballPosition[1], 32)
+			velocityX, _ := strconv.ParseFloat(ballPosition[2], 32)
+			velocityY, _ := strconv.ParseFloat(ballPosition[3], 32)
+		
+			ball.Clear(pixels)
+			ball.Set(positionX, positionY, velocityX, velocityY)
+			ball.Draw(pixels)
+			ballArrayItr = (ballArrayItr + 1)%maxLength
+		}
+
 		texture.Update(nil, pixels, winWidth*4)
 		renderer.Copy(texture, nil, nil)
-		renderer.Present()
+		renderer.Present()	
 	}
 }
 
@@ -109,12 +158,13 @@ func StartGame(firstPlayer bool, kafkaWriter *kafka.Writer, kafkaReaderServer *k
 
 	player1 := types.Paddle{Position: types.Position{X: 50, Y: 300}, Width: 20, Height: 100, Color: white}
 	player2 := types.Paddle{Position: types.Position{X: 750, Y: 300}, Width: 20, Height: 100, Color: white}
-	ball := types.Ball{Position: types.Position{X: 400, Y: 300}, Radius: 20, XVelocity: 1, YVelocity: 1, Color: white}
+	ball := types.Ball{Position: types.Position{X: 400, Y: 300}, Radius: 20, XVelocity: 0.3, YVelocity: 0.3, Color: white}
 	running := true
 	keyState := sdl.GetKeyboardState()
 
 	go readServer(kafkaReaderServer, &ball, texture, renderer, pixels)
 	go readOppositionPosition(kafkaReaderOpposition, &player2, &player1, firstPlayer, texture, renderer, pixels)
+	go renderGame(texture, renderer, pixels, firstPlayer, &player2, &player1, &ball)
 	ball.Draw(pixels)
 	player1.Draw(pixels)
 	player2.Draw(pixels)
