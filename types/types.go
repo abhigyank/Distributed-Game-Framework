@@ -60,6 +60,17 @@ func (ball *Ball) Draw(pixels []byte) {
 	}
 }
 
+// Clear clears the ball.
+func (ball *Ball) Clear(pixels []byte) {
+	for y := -ball.Radius; y < ball.Radius; y++ {
+		for x := -ball.Radius; x < ball.Radius; x++ {
+			if x*x+y*y < ball.Radius*ball.Radius {
+				setPixel(int(ball.X)+x, int(ball.Y)+y, Color{0, 0, 0}, pixels)
+			}
+		}
+	}
+}
+
 // Update updates the ball position and controls collision.
 func (ball *Ball) Update(leftPaddle *Paddle, rightPaddle *Paddle) {
 
@@ -105,6 +116,7 @@ func (ball *Ball) Set(XPosition, YPosition, XVelocity, YVelocity float64) {
 
 // Draw draws the paddle.
 func (paddle *Paddle) Draw(pixels []byte) {
+	fmt.Println(paddle.Y)
 	startX := int(paddle.X) - paddle.Width/2
 	startY := int(paddle.Y) - paddle.Height/2
 
@@ -115,25 +127,37 @@ func (paddle *Paddle) Draw(pixels []byte) {
 	}
 }
 
+//Clear clears the paddle.
+func (paddle *Paddle) Clear(pixels []byte) {
+	startX := int(paddle.X) - paddle.Width/2
+	startY := int(paddle.Y) - paddle.Height/2
+
+	for y := 0; y < paddle.Height; y++ {
+		for x := 0; x < paddle.Width; x++ {
+			setPixel(startX+x, startY+y, Color{0, 0, 0}, pixels)
+		}
+	}
+}
+
 // UpdateFromKeyState updates the paddle position by checking the keyboard state.
 func (paddle *Paddle) UpdateFromKeyState(keyState []uint8) {
 	if keyState[sdl.SCANCODE_UP] != 0 {
-		paddle.Y -= 10
+		paddle.Y -= 3
 	}
 
 	if keyState[sdl.SCANCODE_DOWN] != 0 {
-		paddle.Y += 10
+		paddle.Y += 3
 	}
 }
 
 // UpdateFromDelta updates the paddle position by checking the delta.
 func (paddle *Paddle) UpdateFromDelta(delta string) {
 	if delta == "-10" {
-		paddle.Y -= 10
+		paddle.Y -= 3
 	}
 
 	if delta == "10" {
-		paddle.Y += 10
+		paddle.Y += 3
 	}
 }
 

@@ -26,6 +26,27 @@ func GetKafkaWriter(kafkaBrokerUrls []string, clientID string, topic string) *ka
 		Dialer:       dialer,
 		WriteTimeout: 1 * time.Second,
 		ReadTimeout:  1 * time.Second,
+		BatchSize:    20,
+		BatchTimeout: 50 * time.Millisecond,
+		Async:        true,
+	}
+	return kafka.NewWriter(config)
+}
+
+// GetKafkaWriterBall configures and returns a Kafka Writer for ball
+func GetKafkaWriterBall(kafkaBrokerUrls []string, clientID string, topic string) *kafka.Writer {
+	dialer := &kafka.Dialer{
+		Timeout:  10 * time.Second,
+		ClientID: clientID,
+	}
+
+	config := kafka.WriterConfig{
+		Brokers:      kafkaBrokerUrls,
+		Topic:        topic,
+		Balancer:     &kafka.LeastBytes{},
+		Dialer:       dialer,
+		WriteTimeout: 1 * time.Second,
+		ReadTimeout:  1 * time.Second,
 		BatchTimeout: 10 * time.Millisecond,
 	}
 	return kafka.NewWriter(config)
@@ -38,7 +59,7 @@ func GetKafkaReader(kafkaBrokerUrls []string, clientID string, topic string) *ka
 		GroupID:         clientID,
 		Topic:           topic,
 		MinBytes:        2,                     // 1B
-		MaxBytes:        1000,                   // 100B
+		MaxBytes:        1000,                  // 100B
 		MaxWait:         10 * time.Millisecond, // Maximum amount of time to wait for new data to come when fetching batches of messages from kafka.
 		ReadLagInterval: -1,
 	}

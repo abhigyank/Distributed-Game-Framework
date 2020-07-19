@@ -24,14 +24,13 @@ func readPlayerPosition(kafkaReader *kafka.Reader, player *types.Paddle, ball *t
 		}
 
 		value := m.Value
-		// fmt.Printf("message at topic/partition/offset %v/%v/%v: %s\n", m.Topic, m.Partition, m.Offset, string(value))
 
 		player.UpdateFromDelta(string(value))
 	}
 }
 
 func game(client1 types.Client, client2 types.Client, kafka types.KafkaInfo) {
-	kafkaWriter := kafkaUtils.GetKafkaWriter([]string{kafka.Address + ":" + kafka.Port}, "server", "server_0")
+	kafkaWriter := kafkaUtils.GetKafkaWriterBall([]string{kafka.Address + ":" + kafka.Port}, "server", "server_0")
 
 	kafkaReaderClient1 := kafkaUtils.GetKafkaReader([]string{kafka.Address + ":" + kafka.Port}, "server", client1.ID+"_0")
 	defer kafkaReaderClient1.Close()
@@ -39,18 +38,18 @@ func game(client1 types.Client, client2 types.Client, kafka types.KafkaInfo) {
 	kafkaReaderClient2 := kafkaUtils.GetKafkaReader([]string{kafka.Address + ":" + kafka.Port}, "server", client2.ID+"_0")
 	defer kafkaReaderClient1.Close()
 
-	// Wait for both servers to bootstrap, ideally we should wait for acknoledgement from both that they are ready to start.
-	time.Sleep(5 * time.Second)
-
 	err := writeToStartGame(kafkaWriter)
 	if err != nil {
 		fmt.Println("Error occured while writing to start game", err)
 	}
 
+	// Wait for both servers to bootstrap, ideally we should wait for acknoledgement from both that they are ready to start.
+	time.Sleep(10 * time.Second)
+
 	white := types.Color{R: 255, G: 255, B: 255}
 	player1 := types.Paddle{Position: types.Position{X: 50, Y: 300}, Width: 20, Height: 100, Color: white}
 	player2 := types.Paddle{Position: types.Position{X: 750, Y: 300}, Width: 20, Height: 100, Color: white}
-	ball := types.Ball{Position: types.Position{X: 400, Y: 300}, Radius: 20, XVelocity: .2, YVelocity: .2, Color: white}
+	ball := types.Ball{Position: types.Position{X: 400, Y: 300}, Radius: 20, XVelocity: 1.0, YVelocity: 1.0, Color: white}
 
 	go readPlayerPosition(kafkaReaderClient1, &player1, &ball)
 	go readPlayerPosition(kafkaReaderClient2, &player2, &ball)
@@ -112,8 +111,6 @@ func writeBallPosition(writer *kafka.Writer, ball *types.Ball) {
 	err := kafkaUtils.PushKafkaMessage(context.Background(), writer, nil, []byte(ballPosition))
 	if err != nil {
 		fmt.Println("Error occured while writing to stream", err)
-	} else {
-		// fmt.Println("Ball position written")
 	}
 }
 
