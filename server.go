@@ -24,7 +24,6 @@ func readPlayerPosition(kafkaReader *kafka.Reader, player *types.Paddle, ball *t
 		}
 
 		value := m.Value
-		// fmt.Printf("message at topic/partition/offset %v/%v/%v: %s\n", m.Topic, m.Partition, m.Offset, string(value))
 
 		player.UpdateFromDelta(string(value))
 	}
@@ -50,7 +49,7 @@ func game(client1 types.Client, client2 types.Client, kafka types.KafkaInfo) {
 	white := types.Color{R: 255, G: 255, B: 255}
 	player1 := types.Paddle{Position: types.Position{X: 50, Y: 300}, Width: 20, Height: 100, Color: white}
 	player2 := types.Paddle{Position: types.Position{X: 750, Y: 300}, Width: 20, Height: 100, Color: white}
-	ball := types.Ball{Position: types.Position{X: 400, Y: 300}, Radius: 20, XVelocity: 1.75, YVelocity: 1.75, Color: white}
+	ball := types.Ball{Position: types.Position{X: 400, Y: 300}, Radius: 20, XVelocity: 1.0, YVelocity: 1.0, Color: white}
 
 	go readPlayerPosition(kafkaReaderClient1, &player1, &ball)
 	go readPlayerPosition(kafkaReaderClient2, &player2, &ball)
@@ -112,8 +111,6 @@ func writeBallPosition(writer *kafka.Writer, ball *types.Ball) {
 	err := kafkaUtils.PushKafkaMessage(context.Background(), writer, nil, []byte(ballPosition))
 	if err != nil {
 		fmt.Println("Error occured while writing to stream", err)
-	} else {
-		// fmt.Println("Ball position written")
 	}
 }
 

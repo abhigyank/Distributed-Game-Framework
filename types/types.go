@@ -116,7 +116,7 @@ func (ball *Ball) Set(XPosition, YPosition, XVelocity, YVelocity float64) {
 
 // Draw draws the paddle.
 func (paddle *Paddle) Draw(pixels []byte) {
-	fmt.Println(paddle.Y);
+	fmt.Println(paddle.Y)
 	startX := int(paddle.X) - paddle.Width/2
 	startY := int(paddle.Y) - paddle.Height/2
 
