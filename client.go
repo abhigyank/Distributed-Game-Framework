@@ -8,25 +8,34 @@ import (
 	"net"
 	"os"
 	"strings"
+	"strconv"
 
 	"./kafkaUtils"
 	"./pong"
 	"./types"
 	"github.com/segmentio/kafka-go"
 )
+const numberOfBalls = 2
 
 func writePlayerPosition(writer *kafka.Writer) error {
 	playerPosition := "player position"
 	return kafkaUtils.PushKafkaMessage(context.Background(), writer, nil, []byte(playerPosition))
 }
 
-func game(client types.Client, kafka types.KafkaInfo, oppositeID string) {
+func game(client types.Client, kafkaInfo types.KafkaInfo, oppositeID string) {
 	fmt.Println("Creating " + client.ID + "_0 kafka topic...")
-	kafkaUtils.CreateTopic(kafka.Address+":"+kafka.Port, client.ID+"_0")
-	kafkaWriter := kafkaUtils.GetKafkaWriter([]string{kafka.Address + ":" + kafka.Port}, client.ID, client.ID+"_0")
-	kafkaReaderServer := kafkaUtils.GetKafkaReader([]string{kafka.Address + ":" + kafka.Port}, client.ID, "server_0")
+	kafkaUtils.CreateTopic(kafkaInfo.Address+":"+kafkaInfo.Port, client.ID+"_0")
+	kafkaWriter := kafkaUtils.GetKafkaWriter([]string{kafkaInfo.Address + ":" + kafkaInfo.Port}, client.ID, client.ID+"_0")
+	kafkaReaderServer := kafkaUtils.GetKafkaReader([]string{kafkaInfo.Address + ":" + kafkaInfo.Port}, client.ID, "server_0")
+	
+	var kafkaBallReaders [numberOfBalls]*kafka.Reader
+	for i:= 0; i < numberOfBalls; i++ {
+		kafkaBallReaders[i] = kafkaUtils.GetKafkaReader([]string{kafkaInfo.Address + ":" + kafkaInfo.Port}, client.ID, "ball_" + strconv.Itoa(i) + "_0")
+		defer kafkaBallReaders[i].Close()
+	}
+
 	defer kafkaReaderServer.Close()
-	kafkaReaderOpposition := kafkaUtils.GetKafkaReader([]string{kafka.Address + ":" + kafka.Port}, client.ID, oppositeID+"_0")
+	kafkaReaderOpposition := kafkaUtils.GetKafkaReader([]string{kafkaInfo.Address + ":" + kafkaInfo.Port}, client.ID, oppositeID+"_0")
 	defer kafkaReaderOpposition.Close()
 
 	fmt.Println("Got the kafkaReaders")
@@ -39,7 +48,7 @@ func game(client types.Client, kafka types.KafkaInfo, oppositeID string) {
 	value := m.Value
 	fmt.Printf("First message from server: %v/%v/%v: %s\n", m.Topic, m.Partition, m.Offset, string(value))
 
-	pong.StartGame(client.ID == "1", kafkaWriter, kafkaReaderServer, kafkaReaderOpposition)
+	pong.StartGame(client.ID == "1", kafkaWriter, kafkaReaderServer, kafkaReaderOpposition, kafkaBallReaders)
 }
 
 func main() {

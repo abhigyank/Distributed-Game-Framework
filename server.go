@@ -16,7 +16,9 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-func readPlayerPosition(kafkaReader *kafka.Reader, player *types.Paddle, ball *types.Ball) {
+const numberOfBalls = 2
+
+func readPlayerPosition(kafkaReader *kafka.Reader, player *types.Paddle) {
 	for {
 		m, err := kafkaReader.ReadMessage(context.Background())
 		if err != nil {
@@ -29,13 +31,18 @@ func readPlayerPosition(kafkaReader *kafka.Reader, player *types.Paddle, ball *t
 	}
 }
 
-func game(client1 types.Client, client2 types.Client, kafka types.KafkaInfo) {
-	kafkaWriter := kafkaUtils.GetKafkaWriterBall([]string{kafka.Address + ":" + kafka.Port}, "server", "server_0")
+func game(client1 types.Client, client2 types.Client, kafkaInfo types.KafkaInfo) {
+	kafkaWriter := kafkaUtils.GetKafkaWriterBall([]string{kafkaInfo.Address + ":" + kafkaInfo.Port}, "server", "server_0")
+	
+	var kafkaBallWriters [numberOfBalls]*kafka.Writer
+	for i:= 0; i < numberOfBalls; i++ {
+		kafkaBallWriters[i] = kafkaUtils.GetKafkaWriterBall([]string{kafkaInfo.Address + ":" + kafkaInfo.Port}, "server", "ball_" + strconv.Itoa(i) + "_0")
+	}
 
-	kafkaReaderClient1 := kafkaUtils.GetKafkaReader([]string{kafka.Address + ":" + kafka.Port}, "server", client1.ID+"_0")
+	kafkaReaderClient1 := kafkaUtils.GetKafkaReader([]string{kafkaInfo.Address + ":" + kafkaInfo.Port}, "server", client1.ID+"_0")
 	defer kafkaReaderClient1.Close()
 
-	kafkaReaderClient2 := kafkaUtils.GetKafkaReader([]string{kafka.Address + ":" + kafka.Port}, "server", client2.ID+"_0")
+	kafkaReaderClient2 := kafkaUtils.GetKafkaReader([]string{kafkaInfo.Address + ":" + kafkaInfo.Port}, "server", client2.ID+"_0")
 	defer kafkaReaderClient1.Close()
 
 	err := writeToStartGame(kafkaWriter)
@@ -49,14 +56,18 @@ func game(client1 types.Client, client2 types.Client, kafka types.KafkaInfo) {
 	white := types.Color{R: 255, G: 255, B: 255}
 	player1 := types.Paddle{Position: types.Position{X: 50, Y: 300}, Width: 20, Height: 100, Color: white}
 	player2 := types.Paddle{Position: types.Position{X: 750, Y: 300}, Width: 20, Height: 100, Color: white}
-	ball := types.Ball{Position: types.Position{X: 400, Y: 300}, Radius: 20, XVelocity: 1.0, YVelocity: 1.0, Color: white}
-
-	go readPlayerPosition(kafkaReaderClient1, &player1, &ball)
-	go readPlayerPosition(kafkaReaderClient2, &player2, &ball)
+	ball_0 := types.Ball{Position: types.Position{X: 400, Y: 300}, Radius: 20, XVelocity: 1.0, YVelocity: 1.0, Color: white}
+	ball_1 := types.Ball{Position: types.Position{X: 400, Y: 300}, Radius: 20, XVelocity: -1.0, YVelocity: 1.0, Color: white}
+	var balls [numberOfBalls]*types.Ball
+	balls[0] = &ball_0
+	balls[1] = &ball_1
+	go readPlayerPosition(kafkaReaderClient1, &player1)
+	go readPlayerPosition(kafkaReaderClient2, &player2)
 	for {
-
-		writeBallPosition(kafkaWriter, &ball)
-		ball.Update(&player1, &player2)
+		for i:= 0; i < numberOfBalls; i++ {
+			writeBallPosition(kafkaBallWriters[i], balls[i])
+			balls[i].Update(&player1, &player2)
+		}
 	}
 }
 
