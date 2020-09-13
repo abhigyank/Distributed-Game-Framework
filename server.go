@@ -9,6 +9,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"./kafkaUtils"
@@ -33,10 +34,11 @@ func readPlayerPosition(kafkaReader *kafka.Reader, player *types.Paddle) {
 
 func game(client1 types.Client, client2 types.Client, kafkaInfo types.KafkaInfo) {
 	kafkaWriter := kafkaUtils.GetKafkaWriterBall([]string{kafkaInfo.Address + ":" + kafkaInfo.Port}, "server", "server_0")
-	
+
 	var kafkaBallWriters [numberOfBalls]*kafka.Writer
-	for i:= 0; i < numberOfBalls; i++ {
-		kafkaBallWriters[i] = kafkaUtils.GetKafkaWriterBall([]string{kafkaInfo.Address + ":" + kafkaInfo.Port}, "server", "ball_" + strconv.Itoa(i) + "_0")
+	for i := 0; i < numberOfBalls; i++ {
+		kafkaUtils.CreateTopic(kafkaInfo.Address+":"+kafkaInfo.Port, "ball_"+strconv.Itoa(i)+"_0")
+		kafkaBallWriters[i] = kafkaUtils.GetKafkaWriterBall([]string{kafkaInfo.Address + ":" + kafkaInfo.Port}, "server", "ball_"+strconv.Itoa(i)+"_0")
 	}
 
 	kafkaReaderClient1 := kafkaUtils.GetKafkaReader([]string{kafkaInfo.Address + ":" + kafkaInfo.Port}, "server", client1.ID+"_0")
@@ -56,18 +58,26 @@ func game(client1 types.Client, client2 types.Client, kafkaInfo types.KafkaInfo)
 	white := types.Color{R: 255, G: 255, B: 255}
 	player1 := types.Paddle{Position: types.Position{X: 50, Y: 300}, Width: 20, Height: 100, Color: white}
 	player2 := types.Paddle{Position: types.Position{X: 750, Y: 300}, Width: 20, Height: 100, Color: white}
-	ball_0 := types.Ball{Position: types.Position{X: 400, Y: 300}, Radius: 20, XVelocity: 1.0, YVelocity: 1.0, Color: white}
-	ball_1 := types.Ball{Position: types.Position{X: 400, Y: 300}, Radius: 20, XVelocity: -1.0, YVelocity: 1.0, Color: white}
+	ball0 := types.Ball{Position: types.Position{X: 400, Y: 325}, Radius: 20, XVelocity: -1.0, YVelocity: -1.0, Color: white}
+	ball1 := types.Ball{Position: types.Position{X: 400, Y: 275}, Radius: 20, XVelocity: 1.0, YVelocity: 1.0, Color: white}
 	var balls [numberOfBalls]*types.Ball
-	balls[0] = &ball_0
-	balls[1] = &ball_1
+	balls[0] = &ball0
+	balls[1] = &ball1
+
 	go readPlayerPosition(kafkaReaderClient1, &player1)
 	go readPlayerPosition(kafkaReaderClient2, &player2)
 	for {
-		for i:= 0; i < numberOfBalls; i++ {
-			writeBallPosition(kafkaBallWriters[i], balls[i])
-			balls[i].Update(&player1, &player2)
+		var wg sync.WaitGroup
+		wg.Add(numberOfBalls)
+		for i := 0; i < numberOfBalls; i++ {
+			go func(i int) {
+				defer wg.Done()
+				writeBallPosition(kafkaBallWriters[i], balls[i])
+				balls[i].Update(&player1, &player2)
+			}(i)
 		}
+		wg.Wait()
+		types.BallCollision(balls[:])
 	}
 }
 

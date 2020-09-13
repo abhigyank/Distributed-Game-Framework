@@ -2,6 +2,7 @@ package types
 
 import (
 	"fmt"
+	"math"
 	"os"
 
 	"github.com/veandco/go-sdl2/sdl"
@@ -71,6 +72,64 @@ func (ball *Ball) Clear(pixels []byte) {
 	}
 }
 
+// Reference https://stackoverflow.com/q/345838
+func isCollision(ball1 *Ball, ball2 *Ball) bool {
+	dx, dy := ball1.X-ball2.X, ball1.Y-ball2.Y
+
+	sumRadius := ball1.Radius + ball2.Radius
+	sqrRadius := float64(sumRadius * sumRadius)
+
+	distSqr := (dx * dx) + (dy * dy)
+
+	return distSqr <= sqrRadius
+}
+
+// Reference https://github.com/yoyoberenguer/Elastic-Collision
+func resolveCollision(ball1 *Ball, ball2 *Ball) {
+	dx, dy := ball1.X-ball2.X, ball1.Y-ball2.Y
+	d := math.Sqrt(dx*dx + dy*dy)
+
+	fmt.Println("Ball1.XVelocity: " + fmt.Sprintf("%f", ball1.XVelocity))
+	fmt.Println("Ball1.YVelocity: " + fmt.Sprintf("%f", ball1.YVelocity))
+	fmt.Println("Ball2.XVelocity: " + fmt.Sprintf("%f", ball2.XVelocity))
+	fmt.Println("Ball2.YVelocity: " + fmt.Sprintf("%f", ball2.YVelocity))
+
+	fmt.Println("Collision")
+
+	xImpulse := (ball1.XVelocity - ball2.XVelocity) * (ball1.X - ball2.X)
+	yImpulse := (ball1.YVelocity - ball2.YVelocity) * (ball1.Y - ball2.Y)
+	Impulse := (xImpulse + yImpulse) / (d * d)
+
+	fmt.Println("xImpulse: " + fmt.Sprintf("%f", xImpulse))
+	fmt.Println("yImpulse: " + fmt.Sprintf("%f", yImpulse))
+	fmt.Println("Impulse: " + fmt.Sprintf("%f", Impulse))
+	fmt.Println("dx: " + fmt.Sprintf("%f", dx))
+	fmt.Println("dy: " + fmt.Sprintf("%f", dy))
+	fmt.Println("d: " + fmt.Sprintf("%f", d))
+
+	ball1.XVelocity -= Impulse * dx
+	ball1.YVelocity -= Impulse * dy
+	ball2.XVelocity += Impulse * dx
+	ball2.YVelocity += Impulse * dy
+
+	fmt.Println("Ball1.XVelocity: " + fmt.Sprintf("%f", ball1.XVelocity))
+	fmt.Println("Ball1.YVelocity: " + fmt.Sprintf("%f", ball1.YVelocity))
+	fmt.Println("Ball2.XVelocity: " + fmt.Sprintf("%f", ball2.XVelocity))
+	fmt.Println("Ball2.YVelocity: " + fmt.Sprintf("%f", ball2.YVelocity))
+}
+
+// BallCollision detects collision among balls.
+func BallCollision(balls []*Ball) {
+	N := len(balls)
+	for i := 0; i < N; i++ {
+		for j := i + 1; j < N; j++ {
+			if isCollision(balls[i], balls[j]) {
+				resolveCollision(balls[i], balls[j])
+			}
+		}
+	}
+}
+
 // Update updates the ball position and controls collision.
 func (ball *Ball) Update(leftPaddle *Paddle, rightPaddle *Paddle) {
 
@@ -91,17 +150,17 @@ func (ball *Ball) Update(leftPaddle *Paddle, rightPaddle *Paddle) {
 	}
 
 	if ball.X < leftPaddle.X+float64(leftPaddle.Width/2)+float64(ball.Radius) {
-		fmt.Println("Gone left!")
+		// fmt.Println("Gone left!")
 		if ball.Y > leftPaddle.Y-float64(leftPaddle.Height/2)-float64(ball.Radius) && ball.Y < leftPaddle.Y+float64(leftPaddle.Height/2)+float64(ball.Radius) {
-			fmt.Println("Bouncing")
+			// fmt.Println("Bouncing")
 			ball.XVelocity = -ball.XVelocity
 		}
 	}
 
 	if ball.X > rightPaddle.X-float64(rightPaddle.Width/2)-float64(ball.Radius) {
-		fmt.Println("Gone right!")
+		// fmt.Println("Gone right!")
 		if ball.Y > rightPaddle.Y-float64(rightPaddle.Height/2)-float64(ball.Radius) && ball.Y < rightPaddle.Y+float64(rightPaddle.Height/2)+float64(ball.Radius) {
-			fmt.Println("Bouncing")
+			// fmt.Println("Bouncing")
 			ball.XVelocity = -ball.XVelocity
 		}
 	}

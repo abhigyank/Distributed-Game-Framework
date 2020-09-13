@@ -20,7 +20,7 @@ const numberOfBalls = 2
 var kafkaDataArray [10000009]string
 var maxItr = 0
 var kafkaDataArrayBall [numberOfBalls][10000009]string
-var maxItrBall[numberOfBalls]int // By default initialised with zero.
+var maxItrBall [numberOfBalls]int // By default initialised with zero.
 var maxLength = 10000009
 
 func writeToKafka(keyState []uint8, kafkaWriter *kafka.Writer) {
@@ -84,7 +84,7 @@ func renderGame(texture *sdl.Texture, renderer *sdl.Renderer, pixels []byte, fir
 			playerArrayItr = (playerArrayItr + 1) % maxLength
 		}
 
-		for i:= 0; i < numberOfBalls; i++ {
+		for i := 0; i < numberOfBalls; i++ {
 			if ballArrayItr[i] != maxItrBall[i] {
 				value := kafkaDataArrayBall[i][ballArrayItr[i]]
 				ballPosition := strings.Split(value, ":")
@@ -92,7 +92,7 @@ func renderGame(texture *sdl.Texture, renderer *sdl.Renderer, pixels []byte, fir
 				positionY, _ := strconv.ParseFloat(ballPosition[1], 32)
 				velocityX, _ := strconv.ParseFloat(ballPosition[2], 32)
 				velocityY, _ := strconv.ParseFloat(ballPosition[3], 32)
-	
+
 				balls[i].Clear(pixels)
 				balls[i].Set(positionX, positionY, velocityX, velocityY)
 				balls[i].Draw(pixels)
@@ -133,8 +133,8 @@ func StartGame(firstPlayer bool, kafkaWriter *kafka.Writer, kafkaReaderServer *k
 	player1 := types.Paddle{Position: types.Position{X: 50, Y: 300}, Width: 20, Height: 100, Color: white}
 	player2 := types.Paddle{Position: types.Position{X: 750, Y: 300}, Width: 20, Height: 100, Color: white}
 	var balls [numberOfBalls]*types.Ball
-	ball_0 := types.Ball{Position: types.Position{X: 400, Y: 300}, Radius: 20, XVelocity: 0.3, YVelocity: 0.3, Color: white}
-	ball_1 := types.Ball{Position: types.Position{X: 400, Y: 300}, Radius: 20, XVelocity: -0.3, YVelocity: 0.3, Color: white}
+	ball_0 := types.Ball{Position: types.Position{X: 400, Y: 325}, Radius: 20, XVelocity: 1.0, YVelocity: 1.0, Color: white}
+	ball_1 := types.Ball{Position: types.Position{X: 400, Y: 275}, Radius: 20, XVelocity: -1.0, YVelocity: -1.0, Color: white}
 	balls[0] = &ball_0
 	balls[1] = &ball_1
 	running := true
@@ -144,7 +144,7 @@ func StartGame(firstPlayer bool, kafkaWriter *kafka.Writer, kafkaReaderServer *k
 	for i, ball_element := range balls {
 		go readServer(kafkaBallReaders[i], ball_element, texture, renderer, pixels, i)
 		ball_element.Draw(pixels)
-	} 
+	}
 	player1.Draw(pixels)
 	player2.Draw(pixels)
 	for running {
